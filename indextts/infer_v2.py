@@ -311,7 +311,32 @@ class IndexTTS2:
               emo_audio_prompt=None, emo_alpha=1.0,
               emo_vector=None,
               use_emo_text=False, emo_text=None, use_random=False, interval_silence=200,
-              verbose=False, max_text_tokens_per_segment=120, **generation_kwargs):
+              verbose=False, max_text_tokens_per_segment=120,
+              return_char_timestamps=False,  # 新增参数
+              **generation_kwargs):
+        """
+        修改后的 infer 方法，支持字符级时间戳输出
+
+        Args:
+            spk_audio_prompt: 说话人音频提示
+            text: 输入文本
+            output_path: 输出路径
+            emo_audio_prompt: 情感音频提示
+            emo_alpha: 情感混合系数
+            emo_vector: 情感向量
+            use_emo_text: 是否使用文本情感
+            emo_text: 情感文本
+            use_random: 是否使用随机情感
+            interval_silence: 段间静音(ms)
+            verbose: 是否输出详细信息
+            max_text_tokens_per_segment: 每段最大文本token数
+            return_char_timestamps: 是否返回字符级时间戳
+            **generation_kwargs: 其他生成参数
+
+        Returns:
+            如果 return_char_timestamps=True，返回 (音频路径, 字符时间戳列表)
+            否则只返回音频路径
+        """
         print(">> starting inference...")
         self._set_gr_progress(0, "starting inference...")
         if verbose:
@@ -422,6 +447,32 @@ class IndexTTS2:
         text_tokens_list = self.tokenizer.tokenize(text)
         segments = self.tokenizer.split_segments(text_tokens_list, max_text_tokens_per_segment)
         segments_count = len(segments)
+
+        # 为每个segment记录原始文本字符
+        segment_texts = []
+        char_positions = []  # 记录每个segment中字符在原文本中的位置
+        segment_start_idx = 0
+    
+        for seg_idx, sent in enumerate(segments):
+            # 将token转换回文本以确定字符数
+            seg_text_tokens = self.tokenizer.convert_tokens_to_ids(sent)
+            seg_text_tokens_tensor = torch.tensor(seg_text_tokens, dtype=torch.int32, device=self.device).unsqueeze(0)
+            
+            # 解码获取segment文本（近似）
+            decoded_text = ""
+            for token in sent:
+                if token not in ['<s>', '</s>']:
+                    # 简化处理，实际可能需要更复杂的解码
+                    if token.startswith('▁'):
+                        decoded_text += ' ' + token[1:] if token[1:] else ' '
+                    else:
+                        decoded_text += token
+            
+            segment_texts.append(decoded_text)
+            # 记录字符位置（简化处理）
+            char_positions.append(list(range(segment_start_idx, segment_start_idx + len(decoded_text))))
+            segment_start_idx += len(decoded_text)
+
         if verbose:
             print("text_tokens_list:", text_tokens_list)
             print("segments count:", segments_count)
@@ -576,6 +627,28 @@ class IndexTTS2:
                     print(f"wav shape: {wav.shape}", "min:", wav.min(), "max:", wav.max())
                 # wavs.append(wav[:, :-512])
                 wavs.append(wav.cpu())  # to cpu before saving
+
+                # 计算字符级时间戳
+                if return_char_timestamps:
+                    segment_duration = wav.shape[-1] / sampling_rate
+                    segment_text = segment_texts[seg_idx] if seg_idx < len(segment_texts) else ""
+
+                    if segment_text:
+                        # 简化的字符时间分配（实际应用中可能需要更复杂的对齐算法）
+                        chars = list(segment_text)
+                        char_duration = segment_duration / len(chars)
+                        char_timestamps = []
+                        for char_idx, char in enumerate(chars):
+                            start_time = total_audio_duration + char_idx * char_duration
+                            end_time = start_time + char_duration
+                            char_timestamps.append({
+                                'char': char,
+                                'start': start_time,
+                                'end': end_time
+                            })
+
+                    total_audio_duration += segment_duration + (interval_silence / 1000.0 if seg_idx < len(segments) - 1 else 0)
+
         end_time = time.perf_counter()
 
         self._set_gr_progress(0.9, "saving audio...")
@@ -601,12 +674,19 @@ class IndexTTS2:
                 os.makedirs(os.path.dirname(output_path), exist_ok=True)
             torchaudio.save(output_path, wav.type(torch.int16), sampling_rate)
             print(">> wav file saved to:", output_path)
-            return output_path
+
+            if return_char_timestamps:
+                return output_path, char_timestamps
+            else:
+                return output_path
         else:
             # 返回以符合Gradio的格式要求
             wav_data = wav.type(torch.int16)
             wav_data = wav_data.numpy().T
-            return (sampling_rate, wav_data)
+            if return_char_timestamps:
+                return (sampling_rate, wav_data, char_timestamps)
+            else:
+                return (sampling_rate, wav_data)
 
 
 def find_most_similar_cosine(query_vector, matrix):
@@ -736,4 +816,4 @@ if __name__ == "__main__":
     text = '欢迎大家来体验indextts2，并给予我们意见与反馈，谢谢大家。'
 
     tts = IndexTTS2(cfg_path="checkpoints/config.yaml", model_dir="checkpoints", use_cuda_kernel=False)
-    tts.infer(spk_audio_prompt=prompt_wav, text=text, output_path="gen.wav", verbose=True)
+    tts.infer(spk_audio_prompt=prompt_wav, text=text, output_path="gen.wav", verbose=True, return_char_timestamps=True)

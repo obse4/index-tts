@@ -157,15 +157,22 @@ def gen_single(emo_control_method,prompt, text,
         emo_text = None
 
     print(f"Emo control mode:{emo_control_method},weight:{emo_weight},vec:{vec}")
-    output = tts.infer(spk_audio_prompt=prompt, text=text,
+    output, char_timestamps = tts.infer(spk_audio_prompt=prompt, text=text,
                        output_path=output_path,
                        emo_audio_prompt=emo_ref_path, emo_alpha=emo_weight,
                        emo_vector=vec,
                        use_emo_text=(emo_control_method==3), emo_text=emo_text,use_random=emo_random,
                        verbose=cmd_args.verbose,
                        max_text_tokens_per_segment=int(max_text_tokens_per_segment),
+                       return_char_timestamps=True,
                        **kwargs)
-    return gr.update(value=output,visible=True)
+    # 将时间戳转换为可显示的格式
+    timestamp_text = ""
+    if char_timestamps:
+        timestamp_text = "字符时间戳:\n"
+        for i, ts in enumerate(char_timestamps):
+            timestamp_text += f"{i+1}. '{ts['char']}' {ts['start']:.3f}s - {ts['end']:.3f}s\n"
+    return gr.update(value=output, visible=True), gr.update(value=timestamp_text, visible=True)
 
 def update_prompt_audio():
     update_button = gr.update(interactive=True)
@@ -193,6 +200,14 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
                 input_text_single = gr.TextArea(label=i18n("文本"),key="input_text_single", placeholder=i18n("请输入目标文本"), info=f"{i18n('当前模型版本')}{tts.model_version or '1.0'}")
                 gen_button = gr.Button(i18n("生成语音"), key="gen_button",interactive=True)
             output_audio = gr.Audio(label=i18n("生成结果"), visible=True,key="output_audio")
+        # 添加字符时间戳显示区域
+        char_timestamps_output = gr.Textbox(
+            label=i18n("字符级时间戳"),
+            visible=True,
+            interactive=False,
+            max_lines=10,
+            info=i18n("每个字符在音频中的起止时间")
+        )
         experimental_checkbox = gr.Checkbox(label=i18n("显示实验功能"),value=False)
         with gr.Accordion(i18n("功能设置")):
             # 情感控制选项部分
@@ -393,7 +408,7 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
                              max_text_tokens_per_segment,
                              *advanced_params,
                      ],
-                     outputs=[output_audio])
+                     outputs=[output_audio, char_timestamps_output])
 
 
 

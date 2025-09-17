@@ -1182,6 +1182,7 @@ dependencies = [
     { name = "pandas" },
     { name = "safetensors" },
     { name = "sentencepiece" },
+    { name = "socksio" },
     { name = "tensorboard" },
     { name = "textstat" },
     { name = "tokenizers" },
@@ -1228,6 +1229,7 @@ requires-dist = [
     { name = "pandas", specifier = "==2.3.2" },
     { name = "safetensors", specifier = "==0.5.2" },
     { name = "sentencepiece", specifier = ">=0.2.1" },
+    { name = "socksio", specifier = ">=1.0.0" },
     { name = "tensorboard", specifier = "==2.9.1" },
     { name = "textstat", specifier = ">=0.7.10" },
     { name = "tokenizers", specifier = "==0.21.0" },
@@ -3264,6 +3266,15 @@ wheels = [
 ]
 
 [[package]]
+name = "socksio"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/5c/48a7d9495be3d1c651198fd99dbb6ce190e2274d0f28b9051307bdec6b85/socksio-1.0.0.tar.gz", hash = "sha256:f88beb3da5b5c38b9890469de67d0cb0f9d494b78b106ca1845f96c10b91c4ac", size = 19055, upload-time = "2020-04-17T15:50:34.664Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/c3/6eeb6034408dac0fa653d126c9204ade96b819c936e136c5e8a6897eee9c/socksio-1.0.0-py3-none-any.whl", hash = "sha256:95dc1f15f9b34e8d7b16f06d74b8ccf48f609af32ab33c608d08761c5dcbb1f3", size = 12763, upload-time = "2020-04-17T15:50:31.878Z" },
+]
+
+[[package]]
 name = "soundfile"
 version = "0.13.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3837,7 +3848,7 @@ name = "wetext"
 version = "0.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "kaldifst" },
+    { name = "kaldifst", marker = "platform_machine != 'aarch64' or sys_platform != 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f8/5c/742a6de1b6cd3215d5610ae0e4580f761c5dbf2e9e246afe76ed64c3f622/wetext-0.1.0.tar.gz", hash = "sha256:0f9645bc4b6c90119d54dd9f752db40497630a05af80e627f114204cc78f3ad5", size = 1457764, upload-time = "2025-09-08T14:23:47.85Z" }
 wheels = [
