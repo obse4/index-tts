@@ -490,6 +490,7 @@ class IndexTTS2:
         sampling_rate = 22050
 
         wavs = []
+        total_audio_duration = 0.0  # 初始化累计音频时长
         gpt_gen_time = 0
         gpt_forward_time = 0
         s2mel_time = 0
