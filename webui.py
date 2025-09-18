@@ -157,7 +157,7 @@ def gen_single(emo_control_method,prompt, text,
         emo_text = None
 
     print(f"Emo control mode:{emo_control_method},weight:{emo_weight},vec:{vec}")
-    output, char_timestamps = tts.infer(spk_audio_prompt=prompt, text=text,
+    output, segment_timestamps = tts.infer(spk_audio_prompt=prompt, text=text,
                        output_path=output_path,
                        emo_audio_prompt=emo_ref_path, emo_alpha=emo_weight,
                        emo_vector=vec,
@@ -167,12 +167,12 @@ def gen_single(emo_control_method,prompt, text,
                        return_char_timestamps=True,
                        **kwargs)
     # 将时间戳转换为可显示的格式
-    timestamp_text = ""
-    if char_timestamps:
-        timestamp_text = "字符时间戳:\n"
-        for i, ts in enumerate(char_timestamps):
-            timestamp_text += f"{i+1}. '{ts['char']}' {ts['start']:.3f}s - {ts['end']:.3f}s\n"
-    return gr.update(value=output, visible=True), gr.update(value=timestamp_text, visible=True)
+    # timestamp_text = ""
+    # if segment_timestamps:
+    #     timestamp_text = "字符时间戳:\n"
+    #     for i, ts in enumerate(segment_timestamps):
+    #         timestamp_text += f"{i+1}. '{ts['char']}' {ts['start']:.3f}s - {ts['end']:.3f}s\n"
+    return gr.update(value=output, visible=True), gr.update(value=segment_timestamps, visible=True)
 
 def update_prompt_audio():
     update_button = gr.update(interactive=True)
@@ -201,7 +201,7 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
                 gen_button = gr.Button(i18n("生成语音"), key="gen_button",interactive=True)
             output_audio = gr.Audio(label=i18n("生成结果"), visible=True,key="output_audio")
         # 添加字符时间戳显示区域
-        char_timestamps_output = gr.Textbox(
+        segment_timestamps_output = gr.Textbox(
             label=i18n("字符级时间戳"),
             visible=True,
             interactive=False,
@@ -408,7 +408,7 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
                              max_text_tokens_per_segment,
                              *advanced_params,
                      ],
-                     outputs=[output_audio, char_timestamps_output])
+                     outputs=[output_audio, segment_timestamps_output])
 
 
 

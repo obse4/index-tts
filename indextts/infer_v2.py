@@ -477,7 +477,7 @@ class IndexTTS2:
             decoded_text = self.tokenizer.decode(seg_text_tokens)
     
             # 处理可能的额外空格（SentencePiece 特性）
-            decoded_text = decoded_text.replace(' ', '').replace('▁', ' ')
+            decoded_text = decoded_text.replace('▁', ' ').replace('.','。')
     
             segment_texts.append(decoded_text)
 
@@ -642,12 +642,14 @@ class IndexTTS2:
                 wavs.append(wav.cpu())  # to cpu before saving
 
                 # 计算字符级时间戳
+                segment_timestamps = []
                 if return_char_timestamps:
                     segment_duration = wav.shape[-1] / sampling_rate
                     segment_text = segment_texts[seg_idx] if seg_idx < len(segment_texts) else ""
 
                     if segment_text:
                         print(f"段文本 segment_text{seg_idx}: {segment_text}")
+                        segment_start = total_audio_duration
                         # 简化的字符时间分配（实际应用中可能需要更复杂的对齐算法）
                         chars = list(segment_text)
                         char_duration = segment_duration / len(chars)
@@ -663,6 +665,13 @@ class IndexTTS2:
 
                     total_audio_duration += segment_duration + (interval_silence / 1000.0 if seg_idx < len(segments) - 1 else 0)
 
+                    segment_timestamps.append({
+                        'seg_idx': seg_idx,
+                        'text': segment_text,
+                        'start': segment_start,
+                        'end': segment_start + segment_duration,
+                        'char_timestamps': char_timestamps
+                    })
         end_time = time.perf_counter()
 
         self._set_gr_progress(0.9, "saving audio...")
@@ -690,7 +699,7 @@ class IndexTTS2:
             print(">> wav file saved to:", output_path)
 
             if return_char_timestamps:
-                return output_path, char_timestamps
+                return output_path, segment_timestamps
             else:
                 return output_path
         else:
@@ -698,7 +707,7 @@ class IndexTTS2:
             wav_data = wav.type(torch.int16)
             wav_data = wav_data.numpy().T
             if return_char_timestamps:
-                return (sampling_rate, wav_data, char_timestamps)
+                return (sampling_rate, wav_data, segment_timestamps)
             else:
                 return (sampling_rate, wav_data)
 
