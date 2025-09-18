@@ -474,7 +474,7 @@ class IndexTTS2:
             
             # segment_texts.append(decoded_text)
             # 使用 tokenizer 官方解码方法
-            decoded_text = self.tokenizer.tokenizer.decode(seg_text_tokens, skip_special_tokens=True)
+            decoded_text = self.tokenizer.decode(seg_text_tokens)
     
             # 处理可能的额外空格（SentencePiece 特性）
             decoded_text = decoded_text.replace(' ', '').replace('▁', ' ')
