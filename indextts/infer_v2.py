@@ -635,6 +635,7 @@ class IndexTTS2:
                     segment_text = segment_texts[seg_idx] if seg_idx < len(segment_texts) else ""
 
                     if segment_text:
+                        print(f"段文本 segment_text{seg_idx}: {segment_text}")
                         # 简化的字符时间分配（实际应用中可能需要更复杂的对齐算法）
                         chars = list(segment_text)
                         char_duration = segment_duration / len(chars)
