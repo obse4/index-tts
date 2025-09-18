@@ -503,6 +503,7 @@ class IndexTTS2:
 
         wavs = []
         total_audio_duration = 0.0  # 初始化累计音频时长
+        segment_timestamps = []
         gpt_gen_time = 0
         gpt_forward_time = 0
         s2mel_time = 0
@@ -642,7 +643,6 @@ class IndexTTS2:
                 wavs.append(wav.cpu())  # to cpu before saving
 
                 # 计算字符级时间戳
-                segment_timestamps = []
                 if return_char_timestamps:
                     segment_duration = wav.shape[-1] / sampling_rate
                     segment_text = segment_texts[seg_idx] if seg_idx < len(segment_texts) else ""
