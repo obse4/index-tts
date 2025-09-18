@@ -457,18 +457,30 @@ class IndexTTS2:
             # 将token转换回文本以确定字符数
             seg_text_tokens = self.tokenizer.convert_tokens_to_ids(sent)
             seg_text_tokens_tensor = torch.tensor(seg_text_tokens, dtype=torch.int32, device=self.device).unsqueeze(0)
+            # 移除开始和结束标记
+            if seg_text_tokens[0] == self.tokenizer.bos_token_id:
+                seg_text_tokens = seg_text_tokens[1:]
+            if seg_text_tokens[-1] == self.tokenizer.eos_token_id:
+                seg_text_tokens = seg_text_tokens[:-1]
+            # # 解码获取segment文本（近似）
+            # decoded_text = ""
+            # for token in sent:
+            #     if token not in ['<s>', '</s>']:
+            #         # 简化处理，实际可能需要更复杂的解码
+            #         if token.startswith('▁'):
+            #             decoded_text += ' ' + token[1:] if token[1:] else ' '
+            #         else:
+            #             decoded_text += token
             
-            # 解码获取segment文本（近似）
-            decoded_text = ""
-            for token in sent:
-                if token not in ['<s>', '</s>']:
-                    # 简化处理，实际可能需要更复杂的解码
-                    if token.startswith('▁'):
-                        decoded_text += ' ' + token[1:] if token[1:] else ' '
-                    else:
-                        decoded_text += token
-            
+            # segment_texts.append(decoded_text)
+            # 使用 tokenizer 官方解码方法
+            decoded_text = self.tokenizer.tokenizer.decode(seg_text_tokens, skip_special_tokens=True)
+    
+            # 处理可能的额外空格（SentencePiece 特性）
+            decoded_text = decoded_text.replace(' ', '').replace('▁', ' ')
+    
             segment_texts.append(decoded_text)
+
             # 记录字符位置（简化处理）
             char_positions.append(list(range(segment_start_idx, segment_start_idx + len(decoded_text))))
             segment_start_idx += len(decoded_text)
