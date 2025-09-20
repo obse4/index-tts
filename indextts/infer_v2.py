@@ -658,19 +658,19 @@ class IndexTTS2:
                             start_time = total_audio_duration + char_idx * char_duration
                             end_time = start_time + char_duration
                             char_timestamps.append({
-                                'char': char,
-                                'start': start_time,
-                                'end': end_time
+                                'text': char,
+                                'begin': int(start_time*1000),
+                                'end': int(end_time*1000)
                             })
 
                     total_audio_duration += segment_duration + (interval_silence / 1000.0 if seg_idx < len(segments) - 1 else 0)
 
                     segment_timestamps.append({
-                        'seg_idx': seg_idx,
-                        'text': segment_text,
-                        'start': segment_start,
-                        'end': segment_start + segment_duration,
-                        'char_timestamps': char_timestamps
+                        'paragraph_no': seg_idx,
+                        'text': text,
+                        'begin_time': int(segment_start*1000),
+                        'end_time': int((segment_start + segment_duration)*1000),
+                        'words': char_timestamps
                     })
         end_time = time.perf_counter()
 
